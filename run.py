@@ -212,26 +212,30 @@ else:
     subject_dirs = glob(os.path.join(args.bids_dir, "sub-*"))
     subjects_to_analyze = [subject_dir.split("-")[-1] for subject_dir in subject_dirs]
 
+# only validate & parse inputs if we're running an entry stage
+parse_inputs = False
+if set(args.stages).difference(["FreeSurfer","PostFreeSurfer"]):
+    parse_inputs = True
+    run("bids-validator " + args.bids_dir)
+    layout = BIDSLayout(args.bids_dir)
+
 # running participant level
 if args.analysis_level == "participant":
-    struct_stages_dict = OrderedDict([("PreFreeSurfer", None),
-                       ("FreeSurfer", partial(run_freesurfer,
-                                             path=args.output_dir,
-                                             subject="sub-%s"%subject_label,
-                                             n_cpus=args.n_cpus)),
-                       ("PostFreeSurfer", partial(run_post_freesurfer,
+    for subject_label in subjects_to_analyze:
+        struct_stages_dict = OrderedDict([("PreFreeSurfer", None),
+                           ("FreeSurfer", partial(run_freesurfer,
                                                  path=args.output_dir,
                                                  subject="sub-%s"%subject_label,
-                                                 grayordinatesres=grayordinatesres,
-                                                 lowresmesh=lowresmesh,
-                                                 n_cpus=args.n_cpus))
-                       ])
-    # only validate & parse inputs if we're running an entry stage
-    if set(args.stages).difference(["FreeSurfer","PostFreeSurfer"]):
-        run("bids-validator " + args.bids_dir)
-        layout = BIDSLayout(args.bids_dir)
-        # find all T1s and skullstrip them
-        for subject_label in subjects_to_analyze:
+                                                 n_cpus=args.n_cpus)),
+                           ("PostFreeSurfer", partial(run_post_freesurfer,
+                                                     path=args.output_dir,
+                                                     subject="sub-%s"%subject_label,
+                                                     grayordinatesres=grayordinatesres,
+                                                     lowresmesh=lowresmesh,
+                                                     n_cpus=args.n_cpus))
+                           ])
+        if parse_inputs:
+            # find all T1s and skullstrip them
             t1ws = [f.filename for f in layout.get(subject=subject_label,
                                                    type='T1w',
                                                    extensions=["nii.gz", "nii"])]
@@ -332,7 +336,7 @@ if args.analysis_level == "participant":
                                       "seunwarpdir": seunwarpdir,
                                       "avgrdcmethod": "TOPUP"})
             #TODO add support for GE fieldmaps
-
+    
             #now add PreFreeSurfer functools
             struct_stages_dict["PreFreeSurfer"] = partial(run_pre_freesurfer,
                                                 path=args.output_dir,
@@ -343,11 +347,11 @@ if args.analysis_level == "participant":
                                                 t1_template_res=t1_template_res,
                                                 t2_template_res=t2_template_res,
                                                 **fmap_args)
-
+    
         for stage, stage_func in struct_stages_dict.iteritems():
             if stage in args.stages:
                 stage_func()
-
+    
         for fmritcs in bolds:
             fmriname = "_".join(fmritcs.split("sub-")[-1].split("_")[1:]).split(".")[0]
             assert fmriname
