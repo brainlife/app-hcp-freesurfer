@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=8,walltime=24:00:00
+#PBS -N app-bids-hcppipeline-FS
+
+stage=FreeSurfer
+input=`jq -r '.hcp_freesurferpre' config.json`
+sub=$(jq -r "._inputs[0].meta.subject" config.json | tr -d "_")
+if [[ -z $sub || $sub == null ]]; then
+    sub=0
+fi
+bids_sub=sub-$sub
+
+#organizing brainlife input to "bids" structure
+mv output $bids_sub
+
+singularity exec docker://soichih/hcppipeline \
+    python /run.py --n_cpus 8 --stages $stage \
+    --license_key "$FREESURFER_LICENSE" input ./ participant
+
+#move FS dirs
+mkdir output
+for d in label mri scripts stats surf tmp touch trash; do
+    mv ${bids_sub}/T1w/$d output/
+done
+
+if [[ -e output/scripts/recon-all.done ]]; then
+    exit 0   
+else
+    exit 1
+fi
