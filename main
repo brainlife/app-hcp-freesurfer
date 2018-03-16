@@ -20,7 +20,7 @@ singularity exec docker://soichih/hcppipeline \
 #move FS dirs
 mkdir output
 for d in label mri scripts stats surf tmp touch trash; do
-    mv ${bids_sub}/T1w/$d output/
+    mv ${bids_sub}/T1w/$bids_sub/$d output/
 done
 
 if [[ -e output/scripts/recon-all.done ]]; then
