@@ -12,9 +12,7 @@ fi
 bids_sub=sub-$sub
 
 #organizing brainlife input to "bids" structure
-mv $predat/output $bids_sub
-ls $bids_sub
-ls $bids_sub/T1w
+cp -r $predat/output $bids_sub
 
 singularity exec docker://soichih/hcppipeline \
     python ./run.py input ./ participant \
@@ -24,7 +22,6 @@ singularity exec docker://soichih/hcppipeline \
 
 #move FS dirs
 mv ${bids_sub}/T1w/$bids_sub output
-ls output
 
 if [[ -e output/scripts/recon-all.done ]]; then
     exit 0   
