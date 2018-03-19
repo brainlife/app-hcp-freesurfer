@@ -13,6 +13,8 @@ bids_sub=sub-$sub
 
 #organizing brainlife input to "bids" structure
 mv $predat/output $bids_sub
+ls $bids_sub
+ls $bids_sub/T1w
 
 singularity exec docker://soichih/hcppipeline \
     python ./run.py input ./ participant \
