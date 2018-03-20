@@ -22,6 +22,8 @@ singularity exec docker://soichih/hcppipeline \
 
 #move FS dirs
 mv ${bids_sub}/T1w/$bids_sub output
+echo "output from FS (ls output):"
+ls output
 
 if [[ -e output/scripts/recon-all.done ]]; then
     exit 0   
